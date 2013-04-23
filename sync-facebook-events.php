@@ -65,6 +65,8 @@ function fbes_get_events($fbes_api_key, $fbes_api_secret, $fbes_access_token, $f
 		'cookie' => true,
 	));
 
+	$facebook->setAccessToken($fbes_access_token);
+
   $ret = array();
   foreach ($fbes_api_uids as $key => $value) {
     if($value!='') {
@@ -233,6 +235,10 @@ function fbes_options_page() {
 		'secret' =>  $fbes_api_secret,
 		'cookie' => true,
 	));
+	$facebook->setAccessToken($fbes_access_token);
+
+	$events = fbes_get_events($fbes_api_key, $fbes_api_secret, $fbes_access_token, $fbes_api_uids);
+	echo "<pre>".json_encode($events, JSON_PRETTY_PRINT)."</pre>";
 ?>
 	<div class="wrap">
 	 	<br /><div class="icon32" id="icon-plugins"><br/></div>
