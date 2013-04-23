@@ -48,45 +48,36 @@ function fbes_process_events() {
 	$fbes_api_uid = get_option('fbes_api_uid');
 	$fbes_api_uids = get_option('fbes_api_uids');	
 	$fbes_frequency = get_option('fbes_frequency');
+	$fbes_access_token = get_option('fbes_access_token'); // modified
 
 	
-	$events = fbes_get_events($fbes_api_key, $fbes_api_secret, $fbes_api_uids);
+	$events = fbes_get_events($fbes_api_key, $fbes_api_secret, $fbes_access_token, $fbes_api_uids);
 	fbes_send_events($events);
 }
 
-function fbes_get_events($fbes_api_key, $fbes_api_secret, $fbes_api_uids) {
+function fbes_get_events($fbes_api_key, $fbes_api_secret, $fbes_access_token, $fbes_api_uids) {
 
-	require 'facebook.php';
-	
+	require 'facebook-php-sdk/facebook.php'; //modified
+
 	$facebook = new Facebook(array(
 		'appId'  =>  $fbes_api_key,
 		'secret' =>  $fbes_api_secret,
 		'cookie' => true,
 	));
 
-	$ret = array();
-	foreach ($fbes_api_uids as $key => $value) {
+  $ret = array();
+  foreach ($fbes_api_uids as $key => $value) {
+    if($value!='') {
+      $result = $facebook->api('/'.$value.'/events', 'GET', array(
+        'fields' => 'name,start_time,end_time,location,description,timezone'
+      ));
+      $result = $result['data'];
+      foreach($result as $k => $v)
+        $result[$k]['uid'] = $value;
+      $ret = array_merge($ret, $result);
+    }
+  }
 
-		if($value!='') {
-			//https://developers.facebook.com/docs/reference/fql/event/
-			$fql = "SELECT eid, name, start_time, end_time, location, description
-					FROM event WHERE eid IN ( SELECT eid FROM event_member WHERE uid = $value ) 
-					ORDER BY start_time desc";
-
-			$param  =   array(
-				'method'    => 'fql.query',
-				'query'     => $fql,
-				'callback'  => ''
-			);
-	
-			$result = $facebook->api($param);
-			foreach($result as $k => $v)
-				$result[$k]['uid'] = $value;
-			$ret = array_merge($ret, $result);
-		}
-	}
-	
-		
 	return $ret;
 }
 
@@ -234,6 +225,14 @@ function fbes_options_page() {
 				
 		update_option('fbes_api_uids', $fbes_api_uids);
 	}	
+
+	require 'facebook-php-sdk/facebook.php'; //modified
+
+	$facebook = new Facebook(array(
+		'appId'  =>  $fbes_api_key,
+		'secret' =>  $fbes_api_secret,
+		'cookie' => true,
+	));
 ?>
 	<div class="wrap">
 	 	<br /><div class="icon32" id="icon-plugins"><br/></div>
@@ -279,6 +278,20 @@ function fbes_options_page() {
 		echo ' name="update" /></td></tr></table>';
 		?>
 		</form>
+		<?php
+		  $code = $_REQUEST["code"];
+		  if(!empty($code)){
+		    update_option('fbes_access_token', $facebook->getAccessToken());
+		  }
+		  else if(!get_option('fbes_access_token')){
+			  $params = array(
+			    'scope'        => 'manage_pages',
+			    'redirect_uri' => curPageURL()
+			  );
+			  $loginUrl = $facebook->getLoginUrl($params);
+			  echo "<a href='$loginUrl'>Authorize Facebook</a>";
+			}
+		?>
 	</div>
 	<?php if(isset($events)) { ?>
 		<div style="margin-top:20px;font-size:14px;color:#444;border:1px solid #999;padding:15px;width:95%;font-face:couriernew;">
@@ -288,5 +301,17 @@ function fbes_options_page() {
 		</div>
 	<? } ?>
 <?php	
+}
+
+function curPageURL() {
+ $pageURL = 'http';
+ if ($_SERVER["HTTPS"] == "on") {$pageURL .= "s";}
+ $pageURL .= "://";
+ if ($_SERVER["SERVER_PORT"] != "80") {
+  $pageURL .= $_SERVER["SERVER_NAME"].":".$_SERVER["SERVER_PORT"].$_SERVER["REQUEST_URI"];
+ } else {
+  $pageURL .= $_SERVER["SERVER_NAME"].$_SERVER["REQUEST_URI"];
+ }
+ return $pageURL;
 }
 ?>
