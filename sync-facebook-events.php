@@ -2,12 +2,12 @@
 /*
 Plugin Name: Sync Facebook Events
 Plugin URI: http://pdxt.com
-Description: Sync Facebook Events to The Events Calendar Plugin 
+Description: Sync Facebook Events to The Events Calendar Plugin
 Author: Mark Nelson
 Version: 1.0.9
 Author URI: http://pdxt.com
 */
- 
+
 /*  Copyright 2012 PDX Technologies, LLC. (mark.nelson@pdxt.com)
 
     This program is free software; you can redistribute it and/or modify
@@ -32,7 +32,7 @@ function deactivate_fbes() { wp_clear_scheduled_hook('fbes_execute_sync'); }
 add_action('fbes_execute_sync', 'fbes_process_events');
 
 function update_schedule($fbes_frequency) {
-	
+
 		wp_clear_scheduled_hook('fbes_execute_sync');
 		wp_schedule_event(time(), $fbes_frequency, 'fbes_execute_sync');
 }
@@ -46,18 +46,18 @@ function fbes_process_events() {
 	$fbes_api_key = get_option('fbes_api_key');
 	$fbes_api_secret = get_option('fbes_api_secret');
 	$fbes_api_uid = get_option('fbes_api_uid');
-	$fbes_api_uids = get_option('fbes_api_uids');	
+	$fbes_api_uids = get_option('fbes_api_uids');
 	$fbes_frequency = get_option('fbes_frequency');
 	$fbes_access_token = get_option('fbes_access_token'); // modified
 
-	
+
 	$events = fbes_get_events($fbes_api_key, $fbes_api_secret, $fbes_access_token, $fbes_api_uids);
 	fbes_send_events($events);
 }
 
 function fbes_get_events($fbes_api_key, $fbes_api_secret, $fbes_access_token, $fbes_api_uids) {
 
-	require 'facebook-php-sdk/facebook.php'; //modified
+	require_once 'facebook-php-sdk/facebook.php'; //modified
 
 	$facebook = new Facebook(array(
 		'appId'  =>  $fbes_api_key,
@@ -114,35 +114,35 @@ function fbes_send_events($events) {
 */
 	}
 	//file_put_contents($_SERVER['DOCUMENT_ROOT'].'/fbevent.log', print_r(array(time(),$events,$eids),1)."\n".str_repeat('=',40)."\n", FILE_APPEND);
-	
+
 	foreach($events as $event) {
-		
+
 		$args['post_title'] = $event['name'];
-		
+
 		$offset = get_option('gmt_offset')*3600;
-		
+
 		$offsetStart = $event['start_time']+$offset;
 		$offsetEnd = $event['end_time']+$offset;
-		
+
 		//don't update or insert events from the past.
 		if($offsetEnd > time()) {
-				
+
 			$args['EventStartDate'] = date("m/d/Y", $offsetStart);
 			$args['EventStartHour'] = date("H", $offsetStart);
 			$args['EventStartMinute'] = date("i", $offsetStart);
-			
+
 			$args['EventEndDate'] = date("m/d/Y", $offsetEnd);
 			$args['EventEndHour'] = date("H", $offsetEnd);
 			$args['EventEndMinute'] = date("i", $offsetEnd);
-	
+
 			$args['post_content'] = $event['description'];
 			$args['Venue']['Venue'] = $event['location'];
-			
+
 			$args['post_status'] = "Publish";
 			$args['post_type'] = "tribe_events";
 			//$args['to_ping'] = $event['eid']; //damn you, sanitize_trackback_urls in 3.4
 			$args['to_ping'] = 'https://www.facebook.com/events/'.$event['eid'].'/';
-			
+
 			if($args['EventStartHour'] == '22' && $event['uid'] == '256763181050120') { //why are UT events 2 hours off???
 				$args['EventStartHour'] = '20';
 				$args['EventEndHour'] = '22';
@@ -170,7 +170,7 @@ function fbes_send_events($events) {
 				tribe_update_event($post_id, $args);
 				echo "<br />Updating: ".$eids[$event['eid']];
 			}
-			if($post_id) 
+			if($post_id)
 				update_metadata('post', $post_id, 'fb_event_obj', $event);
 				//eid, name, start_time, end_time, location, description
 		}
@@ -188,10 +188,10 @@ function fbes_options_page() {
 	$fbes_api_uid = get_option('fbes_api_uid');
 	$fbes_api_uids = get_option('fbes_api_uids');
 	$fbes_frequency = get_option('fbes_frequency');
-	
+
 	#Get new updated option values, and save them
 	if( !empty($_POST['update']) ) {
-	
+
 		$fbes_api_key = $_POST['fbes_api_key'];
 		update_option('fbes_api_key', $fbes_api_key);
 
@@ -203,7 +203,7 @@ function fbes_options_page() {
 
 		$fbes_frequency = $_POST['fbes_frequency'];
 		update_option('fbes_frequency', $fbes_frequency);
-		
+
 		$events = fbes_get_events($fbes_api_key, $fbes_api_secret, $fbes_api_uids);
 
 		update_schedule($fbes_frequency);
@@ -218,17 +218,17 @@ function fbes_options_page() {
 			$fbes_api_uids[] = $_POST['fbes_api_uid'];
 			update_option('fbes_api_uids', $fbes_api_uids);
 		}
-		
+
 	} elseif( !empty($_GET['r']) ) {
-		
+
 		foreach ($fbes_api_uids as $key => $value)
 			if($fbes_api_uids[$key] == $_GET['r'])
 				unset($fbes_api_uids[$key]);
-				
-		update_option('fbes_api_uids', $fbes_api_uids);
-	}	
 
-	require 'facebook-php-sdk/facebook.php'; //modified
+		update_option('fbes_api_uids', $fbes_api_uids);
+	}
+
+	require_once 'facebook-php-sdk/facebook.php'; //modified
 
 	$facebook = new Facebook(array(
 		'appId'  =>  $fbes_api_key,
@@ -246,16 +246,16 @@ function fbes_options_page() {
 		<form method="post" action="<?php echo $_SERVER['REQUEST_URI'] ?>">
 		<input type="hidden" name="update" />
 		<?php
-		echo '<form action="'. $_SERVER["REQUEST_URI"] .'" method="post"><table style="width:475px;">'; 
+		echo '<form action="'. $_SERVER["REQUEST_URI"] .'" method="post"><table style="width:475px;">';
 		echo '<tr><td>Facebook App ID:</td><td><input type="text" id="fbes_api_key" name="fbes_api_key" value="'.htmlentities($fbes_api_key).'" size="35" /></td><tr>';
 		echo '<tr><td>Facebook App Secret:</td><td><input type="text" id="fbes_api_secret" name="fbes_api_secret" value="'.htmlentities($fbes_api_secret) .'" size="35" /></td><tr>';
 
-		echo '<tr><td>Update Fequency:</td><td><select id="fbes_frequency" name="fbes_frequency">';		
+		echo '<tr><td>Update Fequency:</td><td><select id="fbes_frequency" name="fbes_frequency">';
 		if(htmlentities($fbes_frequency)=="daily") {
 			echo '<option value="daily" SELECTED>Daily</option>';
 		} else {
 			echo '<option value="daily">Daily</option>';
-		}	
+		}
 		if(htmlentities($fbes_frequency)=="twicedaily") {
 			echo '<option value="twicedaily" SELECTED>Twice Daily</option>';
 		} else {
@@ -267,7 +267,7 @@ function fbes_options_page() {
 			echo '<option value="hourly">Hourly</option>';
 		}
 		echo '</select>';
-		
+
 		echo '<tr><td>Add Facebook Page UID:</td><td><input type="text" id="fbes_api_uid" name="fbes_api_uid" value="" size="15" />';
 		echo '<input type="submit" value="Add" class="button-secondary" name="add-uid" /></td></tr>';
 
@@ -277,9 +277,9 @@ function fbes_options_page() {
 			if($value!='')
 		    	echo '&nbsp;&nbsp;'.$value.'&nbsp;&nbsp;<a href="'.$_SERVER["REQUEST_URI"].'&r='.$value.'">remove</a><br />';
 		}
-		
+
 		echo '</td></tr>';
-		
+
 		echo '<tr><td colspan="2"></td></tr><tr><td colspan="2"><br /><input type="submit" value="Update" class="button-primary"';
 		echo ' name="update" /></td></tr></table>';
 		?>
@@ -305,8 +305,8 @@ function fbes_options_page() {
 		<?php fbes_send_events($events); ?><br />
 		<span style="color:red;">Events Calendar updated with current Facebook events.</span><br /><br />
 		</div>
-	<? } ?>
-<?php	
+	<?php } ?>
+<?php
 }
 
 function curPageURL() {
