@@ -4,7 +4,7 @@ Plugin Name: Sync Facebook Events
 Plugin URI: http://pdxt.com
 Description: Sync Facebook Events to The Events Calendar Plugin 
 Author: Mark Nelson
-Version: 1.0.6
+Version: 1.0.9
 Author URI: http://pdxt.com
 */
  
