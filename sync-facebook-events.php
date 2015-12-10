@@ -305,7 +305,7 @@ function fbes_options_page() {
 		<?php fbes_send_events($events); ?><br />
 		<span style="color:red;">Events Calendar updated with current Facebook events.</span><br /><br />
 		</div>
-	<? } ?>
+	<?php } ?>
 <?php	
 }
 
